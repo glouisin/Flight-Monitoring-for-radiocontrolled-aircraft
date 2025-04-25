@@ -1,64 +1,58 @@
-#include <Wire.h>  // Include Wire library for I2C communication
+#include <Wire.h>
 
-#define MS5607_ADDRESS 0x76  // I2C address of MS5607 altimeter module
+#define MS5607_ADDRESS 0x76  // Adresse I2C du capteur
+
+uint16_t C[7];  // Coefficients de calibration (C1 à C6)
 
 void setup() {
-  Serial.begin(9600);  // Initialize serial communication
+  Serial.begin(9600);
   Wire.begin();
 
-}
- 
-void loop() {
-  // Request pressure measurement
-  Wire.beginTransmission(MS5607_ADDRESS);
-  Wire.write(0x48);  // Send command for D1 (pressure) conversion
-  Wire.endTransmission();
-  
-  delay(30);  // Wait for conversion (adjust delay based on module specifications)
- 
-  // Read pressure measurement
-  Wire.beginTransmission(MS5607_ADDRESS);
-  Wire.write(0x00);  // Send command to read ADC result
-  Wire.endTransmission(false);
- 
-  Wire.requestFrom(MS5607_ADDRESS, 3);  // Request 3 bytes of data
- 
+  // Lecture des coefficients de la PROM (C1 à C6)
+  for (uint8_t i = 1; i <= 6; i++) {
+    Wire.beginTransmission(MS5607_ADDRESS);
+    Wire.write(0xA2 + (i - 1) * 2);  // Correction de l'adresse : 0xA2, 0xA4, ...
+    Wire.endTransmission();
 
- 
-  // Request temperature measurement
-  Wire.beginTransmission(MS5607_ADDRESS);
-  Wire.write(0x58);  // Send command for D2 (temperature) conversion
-  Wire.endTransmission();
- 
-  delay(30);  // Wait for conversion (adjust delay based on module specifications)
- 
-  // Read temperature measurement
-  Wire.beginTransmission(MS5607_ADDRESS);
-  Wire.write(0x00);  // Send command to read ADC result
-  Wire.endTransmission(false);
- 
-  Wire.requestFrom(MS5607_ADDRESS, 3);  // Request 3 bytes of data
-  byte temperatureData[3];
-  if (Wire.available() >= 3) {
-    temperatureData[0] = Wire.read();
-    temperatureData[1] = Wire.read();
-    temperatureData[2] = Wire.read();
+    Wire.requestFrom(MS5607_ADDRESS, 2);
+    if (Wire.available() == 2) {
+      C[i] = (Wire.read() << 8) | Wire.read();
+    }
   }
- 
-  // Calculate temperature value
-  uint32_t D2 = ((uint32_t)temperatureData[0] << 16) | ((uint32_t)temperatureData[1] << 8) | temperatureData[2];
- 
-  // Calculate compensated temperature
-  int32_t dT = D2 - (uint32_t)0x4000;
-  int32_t TEMP = 2000 + dT * 5 / 131072;
-  int64_t OFF = (uint32_t)7025 * (uint32_t)32768 + ((int64_t)dT * (uint32_t)3072) / (uint32_t)16;
-  int64_t SENS = (uint32_t)1100 * (uint32_t)32768 + ((int64_t)dT * (uint32_t)2816) / (uint32_t)16;
-  
- 
-  // Output pressure and temperature readings
+}
 
-  Serial.print("Temperature (°C): ");
-  Serial.println(TEMP / 100.0);
- 
-  delay(1000);  // Delay before next reading
+void loop() {
+  // --- Conversion température D2 ---
+  Wire.beginTransmission(MS5607_ADDRESS);
+  Wire.write(0x58);  // OSR = 4096 pour température
+  Wire.endTransmission();
+  delay(10);
+
+  // Lecture de D2
+  Wire.beginTransmission(MS5607_ADDRESS);
+  Wire.write(0x00);
+  Wire.endTransmission(false);
+  Wire.requestFrom(MS5607_ADDRESS, 3);
+  uint32_t D2 = 0;
+  if (Wire.available() == 3) {
+    D2 = ((uint32_t)Wire.read() << 16) | ((uint32_t)Wire.read() << 8) | Wire.read();
+  }
+
+  // --- Calcul de température compensée avancée ---
+  int32_t dT = D2 - ((uint16_t)C[5] << 8);  // dT = D2 - C5 * 256
+  int32_t TEMP = 2000 + ((uint32_t)dT * C[6]) / 8388608;  // TEMP = 2000 + dT * C6 / 2^23
+
+  // Compensation de température secondaire (corrige la dérive)
+  int32_t T2 = (dT * dT) / 2147483648L; // Température seconde correction
+  TEMP -= T2;
+
+  // Affichage
+  Serial.print("Température compensée (°C) : ");
+  
+
+  Serial.println(TEMP / 100.0);  // Valeur en degrés Celsius
+  
+  Serial.println(micros()*pow(10,-6));
+
+  delay(1000);
 }

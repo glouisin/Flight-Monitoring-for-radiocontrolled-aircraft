@@ -41,22 +41,22 @@ void setup()                    // run once, when the sketch starts
   SoftSerial.begin(9600);      // Port série pour le GPS
     
     // Initialisation de la carte SD
-    Serial.print("Initialisation de la carte SD...");
+  Serial.print("Initialisation de la carte SD...");
     
-    if (!SD.begin(chipSelect)) {
-        Serial.println("Erreur d'initialisation de la carte SD!");
-        return;
+  if (!SD.begin(chipSelect)) {
+      Serial.println("Erreur d'initialisation de la carte SD!");
+      return;
     }
-    Serial.println("Carte SD initialisée.");
+  Serial.println("Carte SD initialisée.");
     
     // Création ou ouverture du fichier de données
-    dataFile = SD.open("gpsdata.txt", FILE_WRITE);
-    if (dataFile) {
-        Serial.println("Fichier gpsdata.txt ouvert ou créé.");
-        dataFile.println("=== Début des données GPS ===");
-        dataFile.close();
+  dataFile = SD.open("gpsdata.txt", FILE_WRITE);
+  if (dataFile) {
+    Serial.println("Fichier gpsdata.txt ouvert ou créé.");
+    dataFile.println("=== Début des données GPS ===");
+    dataFile.close();
     } else {
-        Serial.println("Erreur lors de l'ouverture de gpsdata.txt!");
+      Serial.println("Erreur lors de l'ouverture de gpsdata.txt!");
     }
 
   
@@ -183,24 +183,24 @@ void loop()                     // run over and over again
             buffer[count++] = SoftSerial.read();  
         }
 
-        // Envoi des données au PC
-        Serial.write(buffer, count);
+    // Envoi des données au PC
+    Serial.write(buffer, count);
         
-        // Enregistrement des données sur la carte SD
-        dataFile = SD.open("gpsdata.txt", FILE_WRITE);
-        if (dataFile) {
-            dataFile.write(buffer, count);
-            dataFile.close();
-        } else {
-            Serial.println("Erreur d'écriture sur la carte SD!");
-        }
+    // Enregistrement des données sur la carte SD
+    dataFile = SD.open("gpsdata.txt", FILE_WRITE);
+    if (dataFile) {
+      dataFile.write(buffer, count);
+      dataFile.close();
+    } else {
+      Serial.println("Erreur d'écriture sur la carte SD!");
+    }
         
-        clearBufferArray(); // Nettoyage du buffer
+    clearBufferArray(); // Nettoyage du buffer
     }
 
     // Transmission PC vers GPS (optionnel)
     if (Serial.available()) {  
-        SoftSerial.write(Serial.read());  
+      SoftSerial.write(Serial.read());  
     }
 
   delay(10); // Petit délai pour éviter une surcharge CPU

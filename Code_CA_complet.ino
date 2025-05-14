@@ -139,7 +139,7 @@ void loop()
     time += 0.0075;
 
     // Affichage série
-    Radio.print("Coordonnées d'acc")
+    Radio.print("Coordonnées d'acc");
     Radio.print(time, 4);
     Radio.print(", ");
     Radio.print(event.acceleration.x);

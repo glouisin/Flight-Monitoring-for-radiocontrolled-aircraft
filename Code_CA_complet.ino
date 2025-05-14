@@ -28,7 +28,7 @@ bool enregistrementTermine = false;
 
 uint16_t C[7];  // Coefficients de calibration (C1 à C6)
 
-int sensorPin = 4;              // 220 or 1k resistor connected to this pin
+int sensorPin = 6;              // 220 resistance pour le capteur d'humidité
 long result = 0;
 void setup()                    // run once, when the sketch starts
 {

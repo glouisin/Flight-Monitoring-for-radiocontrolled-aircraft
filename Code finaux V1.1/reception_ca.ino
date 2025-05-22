@@ -19,7 +19,7 @@ void setup() {
   lcd.setCursor(0,0);
   lcd.print("CA POUR PLANEUR");
   lcd.setCursor(0,1);
-  lcd.print("Groupe 27, V.1.0");
+  lcd.print("Groupe 27, V.1.1");
   delay(4000);
   Serial.begin(9600);
   Radio.begin(9600);
